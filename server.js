@@ -1,27 +1,16 @@
 var osc = require('osc'),
-    app = require('http').createServer(handler),
-    io = require('socket.io')(app),
+    express = require('express'),
+    app = express(),
+    server = require('http').Server(app),
+    io = require('socket.io')(server),
     fs = require('fs');
 
-var OSC_LISTEN = 3334,
-    OSC_SEND = 3333;
+var OSC_LISTEN = 3333,
+    OSC_SEND = 3334;
 
-app.listen(8080)
+server.listen(8080);
 
-function handler(req, res) {
-  var indexResponse = function(err, data) {
-    if(err) {
-      console.log(err);
-      res.writeHead(500);
-      return res.end("Error loading index.html");
-    }
-
-    res.writeHead(200);
-    res.end(data);
-  };
-
-  fs.readFile(__dirname + "/index.html", indexResponse);
-}
+app.use(express.static('public'));
 
 // OSC Setup
 
@@ -46,7 +35,8 @@ io.on('connection', function(socket) {
   })
 
   socket.emit('news', { hello: "world"});
-  socket.on('event', function(data) {
+  socket.on('message', function(data) {
+    console.log("Sending " + JSON.stringify(data));
     udpPort.send(data);
   });
 })
