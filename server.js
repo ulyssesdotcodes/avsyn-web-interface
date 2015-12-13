@@ -32,11 +32,13 @@ udpPort.send({
 io.on('connection', function(socket) {
   udpPort.on("message", function(message){
     console.log("Received OSC: " + message);
+    socket.emit('message', message);
   })
 
-  socket.emit('news', { hello: "world"});
   socket.on('message', function(data) {
     console.log("Sending " + JSON.stringify(data));
     udpPort.send(data);
   });
+
+  udpPort.send({ address: "/connection", args: [] });
 })

@@ -1,26 +1,37 @@
 define(function(require) {
-  var socket = io('http://localhost:8080'),
+  var socket = io(),
       f = require('effing.min'),
       _ = require('underscore-min');
 
   nx.globalWidgets = false;
 
+  var listeners = [];
+  var registerListener = function(address, func) {
+    listeners.push(_.partial(function(address, func, message){
+      if(message.address == address) {
+        func(message);
+      }
+    }, address, func));
+  }
+
+
   var Vis = function(address) {
+    _this = this;
     this.address = address;
     this.choices = [];
   };
 
-  Vis.prototype.render = function(el) {
+  Vis.prototype.render = function(el, names) {
     var _this = this;
     var choiceContainer = document.createElement("div");
 
-    for(var i = 0; i < 10; i++) {
+    for(var i = 0; i < names.length; i++) {
       var button = document.createElement("canvas");
       choiceContainer.appendChild(button);
 
       var nxButton = nx.transform(button, "button");
 
-      nxButton.label = "Vis " + i;
+      nxButton.label = names[i];
       nxButton.mode = "toggle";
       nxButton.address = this.address + "/choice";
       nxButton.index = i;
@@ -47,8 +58,26 @@ define(function(require) {
     }
   }
 
+  Vis.prototype.setNames = function(message) {
+    _.chain(message.args)
+      .zip(this.choices)
+      .each(function(messageChoice) {
+        messageChoice[1].label = messageChoice[0];
+        messageChoice[1].draw();
+      });
+  }
+
+  // Set up listeners
+
+  socket.on("message", function(message){
+    _.each(listeners, function(listener){ listener(message) });
+  });
+
   // Run it!
 
   var visA = new Vis("/visA");
-  visA.render(document.querySelector("#visA"));
+
+  registerListener("/connection/choices", function(message){
+    visA.render(document.querySelector("#visA"), message.args);
+  });
 });
