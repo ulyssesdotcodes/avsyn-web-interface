@@ -2,7 +2,19 @@
     <head>
         <script src="/socket.io/socket.io.js"></script>
         <script src="lib/nexusUI.js"></script>
-        <script data-main="app" src="require.js"></script>
+        <script src="js/bundle.js"></script>
+
+        <style>
+         .visualization {
+           display: inline-block;
+           padding: 8px;
+           background-color: #ffffff;
+         }
+
+         .visualization.selectedChoice {
+           background-color: #ff0000;
+         }
+        </style>
     </head>
     <body>
 

@@ -1,83 +1,53 @@
-define(function(require) {
-  var socket = io(),
-      f = require('effing.min'),
-      _ = require('underscore-min');
+var socket = io(),
+    _ = require('underscore'),
+    React = require('react'),
+    ReactDOM = require('react-dom'),
+    Vis = require('./Vis.js');
 
-  nx.globalWidgets = false;
+nx.globalWidgets = false;
 
-  var listeners = [];
-  var registerListener = function(address, func) {
+var listeners = [];
+var registerListener = _.partial(
+  function(listeners, address, func) {
     listeners.push(_.partial(function(address, func, message){
-      if(message.address == address) {
+      if(message.address.startsWith(address)) {
         func(message);
       }
     }, address, func));
-  }
+  }, listeners);
+
+// Listen for stuff here?
+// registerListener(this.address + "/slider", _.bind(function(message) {
+//   var index = _.last(message.address.split('/'));
+//   if(index == "clear") {
+//     this.el.querySelector(".sliders").innerHTML = '';
+//   }
+//   else {
+//     this.addSlider(message.args[0], index);
+//   }
+// }, _this));
 
 
-  var Vis = function(address) {
-    _this = this;
-    this.address = address;
-    this.choices = [];
+// Set up listeners
+
+socket.on("message", function(message){
+  console.log("Received: " + JSON.stringify(message));
+  _.each(listeners, function(listener){ listener(message) });
+});
+
+// Run it!
+document.addEventListener("DOMContentLoaded", function(e){
+  var testVisNames = ["One", "Two", "Three", "Four", "Fivadibadadoop"]
+  ReactDOM.render(<Vis name="visA" visualizationNames={testVisNames} />, document.getElementById("visA"))
+});
+
+registerListener("/connection/choices", function(message){
+  var onVisualizationSelected = function(index) {
+    socket.emit('message', { address: "/visA/choice", args: [index] });
   };
 
-  Vis.prototype.render = function(el, names) {
-    var _this = this;
-    var choiceContainer = document.createElement("div");
-
-    for(var i = 0; i < names.length; i++) {
-      var button = document.createElement("canvas");
-      choiceContainer.appendChild(button);
-
-      var nxButton = nx.transform(button, "button");
-
-      nxButton.label = names[i];
-      nxButton.mode = "toggle";
-      nxButton.address = this.address + "/choice";
-      nxButton.index = i;
-
-      this.choices[i] = nxButton;
-
-      nxButton.on('*', f(_this, 'onChoice', nxButton));
-
-      nxButton.draw();
-    }
-  }
-
-  Vis.prototype.onChoice = function(button, data) {
-    if (data.press = 1) {
-      socket.emit('message', { address: button.address, args: [button.index] });
-
-      // Clear the other buttons
-      _.chain(this.choices)
-        .filter(function(b){ return b != button; })
-        .each(function(button) {
-            button.val.press = 0;
-            button.draw();
-        });
-    }
-  }
-
-  Vis.prototype.setNames = function(message) {
-    _.chain(message.args)
-      .zip(this.choices)
-      .each(function(messageChoice) {
-        messageChoice[1].label = messageChoice[0];
-        messageChoice[1].draw();
-      });
-  }
-
-  // Set up listeners
-
-  socket.on("message", function(message){
-    _.each(listeners, function(listener){ listener(message) });
-  });
-
-  // Run it!
-
-  var visA = new Vis("/visA");
-
-  registerListener("/connection/choices", function(message){
-    visA.render(document.querySelector("#visA"), message.args);
-  });
+  ReactDOM.render(
+    <Vis name="visA" visualizationNames={message.args} onVisualizationSelected={onVisualizationSelected} />,
+    document.getElementById("visA")
+  );
 });
