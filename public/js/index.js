@@ -49,16 +49,29 @@ class Store {
           sliders: [],
         },
         mix: {
-          controls: {}
+          controls: {},
+          cueing: false
         },
-        choices: []
+        choices: [],
       },
       actions:{
-        onChange: _.bind(this.onChange, this)
+        onChange: _.bind(this.onChange, this),
+        toggleCueing: _.bind(this.toggleCueing, this),
+        playQueue: _.bind(this.playQueue, this)
       }
     };
 
     this.osc = osc;
+    this.queue = [];
+  }
+
+  getObject(path) {
+    return _.chain(path)
+      .initial()
+      .reduce(function(memo, path){
+        return memo[path];
+      }, this.props.data)
+      .value();
   }
 
   onMessage(message) {
@@ -91,20 +104,25 @@ class Store {
       args: [value]
     };
 
-    this.osc.send(message);
+    this.queue.push(message);
+
+    if(!this.props.data.mix.cueing) {
+      this.playQueue();
+    }
 
     let object = this.getObject(path)[_.last(path)];
     object.value = value;
     this.render();
   }
 
-  getObject(path) {
-    return _.chain(path)
-      .initial()
-      .reduce(function(memo, path){
-        return memo[path];
-      }, this.props.data)
-      .value();
+  toggleCueing(value) {
+    this.props.data.mix.cueing = value;
+    this.render();
+  }
+
+  playQueue() {
+    _.each(this.queue, _.bind(this.osc.send, this.osc));
+    this.queue = [];
   }
 
   render() {

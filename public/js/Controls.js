@@ -17,7 +17,7 @@ var Slider = React.createClass({
 
 var Toggle = React.createClass({
   render: function() {
-    let selected = this.props.value == 1;
+    let selected = this.props.value == true || this.props.value == 1;
     let className = "toggle" + (selected ? " selected" : "");
     let onChange = _.partial(this.props.onChange, !selected);
     return (

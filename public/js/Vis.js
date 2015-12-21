@@ -75,10 +75,11 @@ var VisualizationChoice = React.createClass({
 var SlidersList = React.createClass({
   render: function() {
     let sliderNodes = this.props.data.map((slider, index) => {
-      let onChange = _.partial(this.props.actions.onChange, this.props.path.concat(index));
+      let path = this.props.path.concat(index);
+      let onChange = _.partial(this.props.actions.onChange, path);
+      let props = _.extend({key:path.join('.')}, slider);
       return (
-          <Controls.Slider key={this.props.visName + ".sliders." + index} value={slider.value}
-            name={slider.name} onChange={onChange}/>
+          <Controls.Slider onChange={onChange} {...props} />
       )
     });
 

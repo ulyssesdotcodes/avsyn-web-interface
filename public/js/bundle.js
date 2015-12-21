@@ -21373,7 +21373,7 @@ var Toggle = React.createClass({
     displayName: 'Toggle',
 
     render: function () {
-        let selected = this.props.value == 1;
+        let selected = this.props.value == true || this.props.value == 1;
         let className = "toggle" + (selected ? " selected" : "");
         let onChange = _.partial(this.props.onChange, !selected);
         return React.createElement(
@@ -21448,9 +21448,23 @@ var MixerControls = React.createClass({
           return React.createElement(Controls.Toggle, props);
       }
     }));
+    let playQueue = _.wrap(this.props.actions.playQueue, function (func, e) {
+      e.preventDefault();func();
+    });
     return React.createElement(
       'div',
       { className: 'controls' },
+      React.createElement(Controls.Toggle, { onChange: this.props.actions.toggleCueing, name: "Cue",
+        value: this.props.data.cueing }),
+      React.createElement(
+        'div',
+        { className: 'toggle', onClick: playQueue },
+        React.createElement(
+          'a',
+          { href: '#' },
+          "Play"
+        )
+      ),
       controlNodes
     );
   }
@@ -21460,6 +21474,8 @@ module.exports = Mixer;
 
 },{"./Controls":161,"./Vis.js":163,"react":159,"underscore":160}],163:[function(require,module,exports){
 "use strict";
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _ = require('underscore'),
     React = require('react'),
@@ -21542,9 +21558,10 @@ var SlidersList = React.createClass({
 
   render: function () {
     let sliderNodes = this.props.data.map((slider, index) => {
-      let onChange = _.partial(this.props.actions.onChange, this.props.path.concat(index));
-      return React.createElement(Controls.Slider, { key: this.props.visName + ".sliders." + index, value: slider.value,
-        name: slider.name, onChange: onChange });
+      let path = this.props.path.concat(index);
+      let onChange = _.partial(this.props.actions.onChange, path);
+      let props = _.extend({ key: path.join('.') }, slider);
+      return React.createElement(Controls.Slider, _extends({ onChange: onChange }, props));
     });
 
     return React.createElement(
@@ -21643,16 +21660,26 @@ class Store {
           sliders: []
         },
         mix: {
-          controls: {}
+          controls: {},
+          cueing: false
         },
         choices: []
       },
       actions: {
-        onChange: _.bind(this.onChange, this)
+        onChange: _.bind(this.onChange, this),
+        toggleCueing: _.bind(this.toggleCueing, this),
+        playQueue: _.bind(this.playQueue, this)
       }
     };
 
     this.osc = osc;
+    this.queue = [];
+  }
+
+  getObject(path) {
+    return _.chain(path).initial().reduce(function (memo, path) {
+      return memo[path];
+    }, this.props.data).value();
   }
 
   onMessage(message) {
@@ -21683,17 +21710,25 @@ class Store {
       args: [value]
     };
 
-    this.osc.send(message);
+    this.queue.push(message);
+
+    if (!this.props.data.mix.cueing) {
+      this.playQueue();
+    }
 
     let object = this.getObject(path)[_.last(path)];
     object.value = value;
     this.render();
   }
 
-  getObject(path) {
-    return _.chain(path).initial().reduce(function (memo, path) {
-      return memo[path];
-    }, this.props.data).value();
+  toggleCueing(value) {
+    this.props.data.mix.cueing = value;
+    this.render();
+  }
+
+  playQueue() {
+    _.each(this.queue, _.bind(this.osc.send, this.osc));
+    this.queue = [];
   }
 
   render() {

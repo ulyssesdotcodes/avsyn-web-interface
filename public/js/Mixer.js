@@ -50,9 +50,14 @@ var MixerControls = React.createClass({
         return (<Controls.Toggle {...props} />);
       }
     }));
+    let playQueue =
+          _.wrap(this.props.actions.playQueue, function(func, e){ e.preventDefault(); func();});
     return(
         <div className="controls">
-            {controlNodes}
+        <Controls.Toggle onChange={this.props.actions.toggleCueing} name={"Cue"}
+            value={this.props.data.cueing}/>
+        <div className="toggle" onClick={playQueue}><a href="#">{"Play"}</a></div>
+        {controlNodes}
         </div>
     )
   }
