@@ -1,32 +1,54 @@
 "use strict";
 
 var _ = require('underscore'),
-    React = require('react');
+    React = require('react'),
+    ReactSlider = require('react-slider'),
+    Controls = require('./Controls.js');
 
 var Vis = React.createClass({
   render: function() {
+
+    let path = this.props.path;
+
+    let visualizationListProps = {
+      path: this.props.path.concat("choice"),
+      actions: this.props.actions,
+      data: {
+        choices: this.props.data.choices,
+        choice: this.props.data.choice
+      }
+    };
+
+    let effectsListProps = {
+      path: this.props.path.concat("effects"),
+      actions: this.props.actions,
+      data: this.props.data.effects
+    };
+
+    let slidersListProps = {
+      path: this.props.path.concat("sliders"),
+      actions: this.props.actions,
+      data: this.props.data.sliders
+    };
+
     return(
-        <div className={this.props.name}>
-          <VisualizationList names={this.props.visualizationNames} onVisualizationSelected={this.props.onVisualizationSelected}/>
+        <div className="choiceVisualization">
+            <EffectsList {...effectsListProps} />
+            <VisualizationList {...visualizationListProps} />
+            <SlidersList {...slidersListProps}/>
         </div>
     );
   }
 });
 
 var VisualizationList = React.createClass({
-  getInitialState: function() {
-    return { selected: 0 };
-  },
-  onVisualizationSelected: function(index) {
-    this.props.onVisualizationSelected(index);
-    this.setState({selected: index});
-  },
   render: function() {
-    var commentNodes = this.props.names.map((name, index) => {
-      var selected = index == this.state.selected;
+    var commentNodes = this.props.data.choices.map((name, index) => {
+      let onSelected = _.partial(this.props.actions.onChange, this.props.path, index);
+      var selected = index == this.props.data.choice.value;
       return (
-          <VisualizationChoice name={name} key={index + name} index={index} onSelected={this.onVisualizationSelected}
-            selected={selected}/>
+          <VisualizationChoice name={name} key={this.props.path.join('.') + "." + name}
+            onSelected={onSelected} selected={selected} />
       )
     });
 
@@ -39,102 +61,63 @@ var VisualizationList = React.createClass({
 });
 
 var VisualizationChoice = React.createClass({
-  handleClick: function(e){
-    if(!this.props.selected) {
-      this.props.onSelected(this.props.index);
-    }
-  },
   render: function() {
-    var selectedClass = this.props.selected ? "visualization selectedChoice" : "visualization";
+    var selectedClass = "toggle" + (this.props.selected ? " selected" : "");
 
     return(
-        <div className={selectedClass} onClick={this.handleClick}>
-          {this.props.name}
+        <div className={selectedClass} onClick={this.props.onSelected}>
+            {this.props.name}
         </div>
     );
   }
 })
 
-// Vis.prototype = {
-//   render: function(el, names) {
-//     this.el = el;
-//     el.innerHTML = '';
-//     var _this = this;
-//     var choiceContainer = document.createElement("div");
-//     choiceContainer.setAttribute("class", "choice");
-//     this.el.appendChild(choiceContainer);
+var SlidersList = React.createClass({
+  render: function() {
+    let sliderNodes = this.props.data.map((slider, index) => {
+      let onChange = _.partial(this.props.actions.onChange, this.props.path.concat(index));
+      return (
+          <Controls.Slider key={this.props.visName + ".sliders." + index} value={slider.value}
+            name={slider.name} onChange={onChange}/>
+      )
+    });
 
-//     var sliderContainer = document.createElement("div");
-//     sliderContainer.setAttribute("class", "sliders");
-//     this.el.appendChild(sliderContainer);
+    return (
+        <div className="sliders">
+          {sliderNodes}
+        </div>
+    )
+  }
+})
 
+var EffectsList = React.createClass({
+  render: function() {
+    let effectNodes = _.values(_.mapObject(this.props.data, (effect, name) => {
 
-//     for(var i = 0; i < names.length; i++) {
-//       var button = document.createElement("canvas");
-//       choiceContainer.appendChild(button);
+      let path = this.props.path.concat(name);
+      let onChange = _.partial(this.props.actions.onChange, path);
 
-//       var nxButton = nx.transform(button, "button");
+      let props = _.extend({key:path.join('.')}, effect);
 
-//       nxButton.label = names[i];
-//       nxButton.mode = "toggle";
-//       nxButton.address = this.address + "/choice";
-//       nxButton.index = i;
+      switch(effect.type) {
+      case 0:
+        props = _.extend(props, {onChange: onChange});
+        return (<Controls.Slider {...props} />);
+      case 1:
+        let onBoolChange = _.compose(onChange, function(value){ return value ? 1 : 0; });
+        props = _.extend(props, {onChange: onBoolChange});
+        return (<Controls.Toggle {...props} />);
+      }
+    }));
 
-//       this.choices[i] = nxButton;
+    return (
+      <div className="effects">
+        {effectNodes}
+      </div>
+    )
 
-//       nxButton.on('*', _.bind(_this.onChoice, this, nxButton));
-
-//       nxButton.draw();
-//     }
-//   },
-
-//   onChoice: function(button, data) {
-//     if (data.press == 1) {
-//       this.socket.emit('message', { address: button.address, args: [button.index] });
-
-//       // Clear the other buttons
-//       _.chain(this.choices)
-//         .filter(function(b){ return b != button; })
-//         .each(function(button) {
-//           button.val.press = 0;
-//           button.draw();
-//         });
-//     }
-//     else {
-//       button.val.press = 1;
-//       button.draw();
-//     }
-//   },
-
-//   setNames: function(message) {
-//     _.chain(message.args)
-//       .zip(this.choices)
-//       .each(function(messageChoice) {
-//         messageChoice[1].label = messageChoice[0];
-//         messageChoice[1].draw();
-//       });
-//   },
-
-//   addSlider: function(name, index) {
-//     var _this = this;
-//     var sliderContainer = this.el.querySelector(".sliders");
-//     var slider = document.createElement("canvas");
-//     sliderContainer.appendChild(slider);
-
-//     var nxSlider = nx.transform(slider, "slider");
-
-//     this.el.appendChild(slider);
-
-//     nxSlider.label = name;
-//     nxSlider.index = index;
-//     nxSlider.address = this.address + "/slider/" + index;
-
-//     nxSlider.on('*', _.bind(this.onSlider, this, nxSlider));
-//   },
-
-//   onSlider: function(slider, data) {
-//     this.socket.emit('message', { address: slider.address, args: [slider.val] });
-//   }
-// };
+  }
+});
 
 module.exports = Vis;
+

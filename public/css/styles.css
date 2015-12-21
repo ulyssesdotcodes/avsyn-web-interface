@@ -1,0 +1,53 @@
+.mixer {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.choiceVisualization {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.controls {
+    flex-basis: 20%;
+}
+
+.visualizations {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.toggle {
+    display: inline-block;
+    padding: 8px;
+    background-color: #ffffff;
+}
+
+.toggle.selected {
+    background-color: #ff0000;
+}
+
+.sliderContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.sliderContainer p {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.slider {
+    display: block;
+    height: 30px;
+    background-color: #000000;
+}
+
+.slider .handle {
+    height:100%;
+    width:20px;
+    background-color: red;
+}
