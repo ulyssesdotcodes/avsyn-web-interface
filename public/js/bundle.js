@@ -21351,37 +21351,49 @@ var _ = require('underscore'),
     ReactSlider = require('react-slider');
 
 var Slider = React.createClass({
-    displayName: 'Slider',
+  displayName: 'Slider',
 
-    render: function () {
-        return React.createElement(
-            'div',
-            { className: 'sliderContainer' },
-            React.createElement(
-                'p',
-                { className: 'name' },
-                this.props.name,
-                ' - ',
-                this.props.value
-            ),
-            React.createElement(ReactSlider, { onChange: this.props.onChange, defaultValue: this.props.value, min: this.props.min, max: this.props.max, step: (this.props.max - this.props.min) * 0.01 })
-        );
-    }
+  getInitialState: function () {
+    return {
+      value: this.props.value
+    };
+  },
+  onChange: function (value) {
+    this.setState({ value: value });
+    this.props.onChange(value);
+  },
+  shouldComponentUpdate: function (nextProps, nextState) {
+    return nextProps.value != this.state.value || nextState.value != this.state.value;
+  },
+  render: function () {
+    return React.createElement(
+      'div',
+      { className: 'sliderContainer' },
+      React.createElement(
+        'p',
+        { className: 'name' },
+        this.props.name,
+        ' - ',
+        this.state.value
+      ),
+      React.createElement(ReactSlider, { onChange: this.onChange, defaultValue: this.props.value, min: this.props.min, max: this.props.max, step: (this.props.max - this.props.min) * 0.01 })
+    );
+  }
 });
 
 var Toggle = React.createClass({
-    displayName: 'Toggle',
+  displayName: 'Toggle',
 
-    render: function () {
-        let selected = this.props.value == true || this.props.value == 1;
-        let className = "toggle" + (selected ? " selected" : "");
-        let onChange = _.partial(this.props.onChange, !selected);
-        return React.createElement(
-            'div',
-            { className: className, onClick: onChange },
-            this.props.name
-        );
-    }
+  render: function () {
+    let selected = this.props.value == true || this.props.value == 1;
+    let className = "toggle" + (selected ? " selected" : "");
+    let onChange = _.partial(this.props.onChange, !selected);
+    return React.createElement(
+      'div',
+      { className: className, onClick: onChange },
+      this.props.name
+    );
+  }
 
 });
 
@@ -21437,10 +21449,10 @@ var MixerControls = React.createClass({
       let props = _.extend({ key: path.join('.') }, control);
 
       switch (control.type) {
-        case 0:
+        case 'f':
           props = _.extend(props, { onChange: onChange });
           return React.createElement(Controls.Slider, props);
-        case 1:
+        case 'b':
           let onBoolChange = _.compose(onChange, function (value) {
             return value ? 1 : 0;
           });
@@ -21526,7 +21538,7 @@ var VisualizationList = React.createClass({
   render: function () {
     var commentNodes = this.props.data.choices.map((name, index) => {
       let onSelected = _.partial(this.props.actions.onChange, this.props.path, index);
-      var selected = index == this.props.data.choice.value;
+      var selected = index == this.props.data.choice;
       return React.createElement(VisualizationChoice, { name: name, key: this.props.path.join('.') + "." + name,
         onSelected: onSelected, selected: selected });
     });
@@ -21584,10 +21596,10 @@ var EffectsList = React.createClass({
       let props = _.extend({ key: path.join('.') }, effect);
 
       switch (effect.type) {
-        case 0:
+        case 'f':
           props = _.extend(props, { onChange: onChange });
           return React.createElement(Controls.Slider, props);
-        case 1:
+        case 'b':
           let onBoolChange = _.compose(onChange, function (value) {
             return value ? 1 : 0;
           });
@@ -21609,22 +21621,45 @@ module.exports = Vis;
 },{"./Controls.js":161,"react":159,"react-slider":3,"underscore":160}],164:[function(require,module,exports){
 "use strict";
 
-var socket = io(),
-    _ = require('underscore'),
+var _ = require('underscore'),
     React = require('react'),
     ReactDOM = require('react-dom'),
     Mixer = require('./Mixer.js');
 
 // Set up an object to do all of the osc stuff
 class Osc {
-  constructor(socket) {
-    this.socket = socket;
+  constructor() {
+    this.socket = new WebSocket("ws://127.0.0.1:3000/");
     this.listeners = [];
 
-    this.socket.on("message", message => {
-      _.each(this.listeners, function (listener) {
-        listener(message);
-      });
+    this.socket.onopen = e => {
+      this.socket.send("Connection made!");
+    };
+
+    this.socket.onmessage = socketMessage => {
+      var messageArrayToObject = arr => {
+        return {
+          address: _.first(arr),
+          args: _.tail(arr)
+        };
+      };
+
+      var data = JSON.parse(socketMessage.data);
+
+      if (data[0] == "#bundle") {
+        let messages = _.chain(data).rest(2).map(messageArrayToObject).value();
+
+        this.triggerListeners(messages);
+      } else {
+        this.triggerListeners(messageArrayToObject(data));
+      }
+    };
+  }
+
+  triggerListeners(oscMessage) {
+    console.log(oscMessage);
+    _.each(this.listeners, function (listener) {
+      listener(oscMessage);
     });
   }
 
@@ -21640,8 +21675,13 @@ class Osc {
     }, address, func));
   }
 
-  send(message) {
-    this.socket.emit('message', message);
+  send(bundle) {
+    let bundleArray = _.chain(bundle).map(message => {
+      return [message.address].concat(message.args);
+    }).reduce((memo, message) => {
+      return memo.concat([message]);
+    }, ["#bundle", { timestamp: 0.1 }]).value();
+    this.socket.send(JSON.stringify(bundleArray));
   }
 }
 
@@ -21683,6 +21723,16 @@ class Store {
   }
 
   onMessage(message) {
+    if (Array.isArray(message)) {
+      _.each(message, _.bind(this.handleMessage, this));
+    } else {
+      this.handleMessage(message);
+    }
+
+    this.render();
+  }
+
+  handleMessage(message) {
     let path = message.address.split('/').splice(1);
     let item = _.last(path);
     let object = this.getObject(path);
@@ -21690,17 +21740,15 @@ class Store {
       object = [];
     } else if (message.args[0] == 32) {
       object[item] = {
-        name: message.args[1],
-        type: message.args[2],
-        min: message.args[3],
-        max: message.args[4],
-        value: message.args[5]
+        type: message.args[1],
+        name: message.args[2],
+        value: message.args[3],
+        min: message.args[4],
+        max: message.args[5]
       };
     } else {
       object[item] = message.args;
     }
-
-    this.render();
   }
 
   onChange(path, value) {
@@ -21716,8 +21764,14 @@ class Store {
       this.playQueue();
     }
 
-    let object = this.getObject(path)[_.last(path)];
-    object.value = value;
+    let object = this.getObject(path);
+    let name = _.last(path);
+    if (object[name].value != undefined) {
+      object[name].value = value;
+    } else {
+      object[name] = value;
+    }
+
     this.render();
   }
 
@@ -21727,7 +21781,7 @@ class Store {
   }
 
   playQueue() {
-    _.each(this.queue, _.bind(this.osc.send, this.osc));
+    this.osc.send(this.queue);
     this.queue = [];
   }
 
@@ -21739,7 +21793,7 @@ class Store {
 
 // Run it!
 
-var osc = new Osc(socket);
+var osc = new Osc();
 var store = new Store(osc);
 
 osc.registerListener(_.bind(store.onMessage, store));

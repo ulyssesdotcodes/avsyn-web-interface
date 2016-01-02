@@ -5,13 +5,25 @@ var _ = require('underscore'),
     ReactSlider = require('react-slider');
 
 var Slider = React.createClass({
+  getInitialState: function() {
+    return {
+      value: this.props.value
+    };
+  },
+  onChange: function(value) {
+    this.setState({value: value});
+    this.props.onChange(value)
+  },
+  shouldComponentUpdate: function(nextProps, nextState) {
+    return nextProps.value != this.state.value || nextState.value != this.state.value
+  },
   render: function() {
     return (
         <div className="sliderContainer">
-            <p className="name">{this.props.name} - {this.props.value}</p>
-        <ReactSlider onChange={this.props.onChange} defaultValue={this.props.value} min={this.props.min} max={this.props.max} step={(this.props.max - this.props.min) * 0.01} />
+            <p className="name">{this.props.name} - {this.state.value}</p>
+        <ReactSlider onChange={this.onChange} defaultValue={this.props.value} min={this.props.min} max={this.props.max} step={(this.props.max - this.props.min) * 0.01} />
         </div>
-    )
+    );
   }
 });
 
@@ -24,7 +36,7 @@ var Toggle = React.createClass({
         <div className={className} onClick={onChange}>
             {this.props.name}
         </div>
-    )
+    );
   }
 
 

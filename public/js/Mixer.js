@@ -41,10 +41,10 @@ var MixerControls = React.createClass({
       let props = _.extend({key:path.join('.')}, control);
 
       switch(control.type) {
-      case 0:
+      case 'f':
         props = _.extend(props, {onChange: onChange});
         return (<Controls.Slider {...props} />);
-      case 1:
+      case 'b':
         let onBoolChange = _.compose(onChange, function(value){ return value ? 1 : 0; });
         props = _.extend(props, {onChange: onBoolChange});
         return (<Controls.Toggle {...props} />);

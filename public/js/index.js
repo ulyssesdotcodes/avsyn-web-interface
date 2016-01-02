@@ -1,21 +1,49 @@
 "use strict";
 
-var socket = io(),
-    _ = require('underscore'),
+var _ = require('underscore'),
     React = require('react'),
     ReactDOM = require('react-dom'),
     Mixer = require('./Mixer.js');
 
 // Set up an object to do all of the osc stuff
 class Osc  {
-  constructor(socket) {
-    this.socket = socket;
+  constructor() {
+    this.socket = new WebSocket("ws://127.0.0.1:3000/");
     this.listeners = [];
 
-    this.socket.on("message", (message) => {
-      _.each(this.listeners, function(listener){ listener(message) });
-    });
+    this.socket.onopen = (e) => {
+      this.socket.send("Connection made!");
+    };
+
+    this.socket.onmessage = (socketMessage) => {
+      var messageArrayToObject = (arr) => {
+        return {
+          address: _.first(arr),
+          args: _.tail(arr)
+        };
+      };
+
+      var data = JSON.parse(socketMessage.data);
+
+      if(data[0] == "#bundle") {
+        let messages = _.chain(data)
+          .rest(2)
+          .map(messageArrayToObject)
+          .value();
+
+        this.triggerListeners(messages);
+      }
+      else {
+        this.triggerListeners(messageArrayToObject(data));
+      }
+    };
   }
+
+  triggerListeners(oscMessage) {
+    console.log(oscMessage);
+    _.each(this.listeners, function(listener){ listener(oscMessage); });
+  }
+
 
   registerListener(func) {
     this.listeners.push(func);
@@ -29,8 +57,17 @@ class Osc  {
     }, address, func));
   }
 
-  send(message) {
-    this.socket.emit('message', message);
+  send(bundle) {
+    let bundleArray =
+      _.chain(bundle)
+        .map((message) => {
+            return [message.address].concat(message.args);
+        })
+        .reduce((memo, message) => {
+          return memo.concat([message]);
+        }, ["#bundle", {timestamp: 0.1}])
+        .value();
+    this.socket.send(JSON.stringify(bundleArray));
   }
 }
 
@@ -75,6 +112,17 @@ class Store {
   }
 
   onMessage(message) {
+    if(Array.isArray(message)) {
+      _.each(message, _.bind(this.handleMessage, this));
+    }
+    else {
+      this.handleMessage(message);
+    }
+
+    this.render();
+  }
+
+  handleMessage(message) {
     let path = message.address.split('/').splice(1);
     let item = _.last(path);
     let object = this.getObject(path);
@@ -83,18 +131,16 @@ class Store {
     }
     else if(message.args[0] == 32) {
       object[item] = {
-        name: message.args[1],
-        type: message.args[2],
-        min: message.args[3],
-        max: message.args[4],
-        value: message.args[5]
+        type: message.args[1],
+        name: message.args[2],
+        value: message.args[3],
+        min: message.args[4],
+        max: message.args[5]
       };
     }
     else {
       object[item] = message.args;
     }
-
-    this.render();
   }
 
   onChange(path, value) {
@@ -110,8 +156,15 @@ class Store {
       this.playQueue();
     }
 
-    let object = this.getObject(path)[_.last(path)];
-    object.value = value;
+    let object = this.getObject(path);
+    let name = _.last(path)
+    if(object[name].value != undefined) {
+      object[name].value = value;
+    }
+    else {
+      object[name] = value
+    }
+
     this.render();
   }
 
@@ -121,7 +174,7 @@ class Store {
   }
 
   playQueue() {
-    _.each(this.queue, _.bind(this.osc.send, this.osc));
+    this.osc.send(this.queue);
     this.queue = [];
   }
 
@@ -136,7 +189,7 @@ class Store {
 
 // Run it!
 
-var osc = new Osc(socket);
+var osc = new Osc();
 var store = new Store(osc);
 
 osc.registerListener(_.bind(store.onMessage, store));

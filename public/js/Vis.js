@@ -45,7 +45,7 @@ var VisualizationList = React.createClass({
   render: function() {
     var commentNodes = this.props.data.choices.map((name, index) => {
       let onSelected = _.partial(this.props.actions.onChange, this.props.path, index);
-      var selected = index == this.props.data.choice.value;
+      var selected = index == this.props.data.choice;
       return (
           <VisualizationChoice name={name} key={this.props.path.join('.') + "." + name}
             onSelected={onSelected} selected={selected} />
@@ -101,10 +101,10 @@ var EffectsList = React.createClass({
       let props = _.extend({key:path.join('.')}, effect);
 
       switch(effect.type) {
-      case 0:
+      case 'f':
         props = _.extend(props, {onChange: onChange});
         return (<Controls.Slider {...props} />);
-      case 1:
+      case 'b':
         let onBoolChange = _.compose(onChange, function(value){ return value ? 1 : 0; });
         props = _.extend(props, {onChange: onBoolChange});
         return (<Controls.Toggle {...props} />);
