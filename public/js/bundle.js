@@ -21444,7 +21444,7 @@ var MixerControls = React.createClass({
 
   render: function () {
     let controlNodes = _.values(_.mapObject(this.props.data.controls, (control, name) => {
-      let path = this.props.path.concat(name);
+      let path = this.props.path.concat([name, "value"]);
       let onChange = _.partial(this.props.actions.onChange, path);
       let props = _.extend({ key: path.join('.') }, control);
 
@@ -21537,8 +21537,8 @@ var VisualizationList = React.createClass({
 
   render: function () {
     var commentNodes = this.props.data.choices.map((name, index) => {
-      let onSelected = _.partial(this.props.actions.onChange, this.props.path, index);
-      var selected = index == this.props.data.choice;
+      let onSelected = _.partial(this.props.actions.onChange, this.props.path, name);
+      var selected = name == this.props.data.choice;
       return React.createElement(VisualizationChoice, { name: name, key: this.props.path.join('.') + "." + name,
         onSelected: onSelected, selected: selected });
     });
@@ -21569,10 +21569,10 @@ var SlidersList = React.createClass({
   displayName: 'SlidersList',
 
   render: function () {
-    let sliderNodes = this.props.data.map((slider, index) => {
-      let path = this.props.path.concat(index);
+    let sliderNodes = _.map(_.keys(this.props.data), name => {
+      let path = this.props.path.concat(name, "value");
       let onChange = _.partial(this.props.actions.onChange, path);
-      let props = _.extend({ key: path.join('.') }, slider);
+      let props = _.extend({ key: path.join('.') }, this.props.data[name]);
       return React.createElement(Controls.Slider, _extends({ onChange: onChange }, props));
     });
 
@@ -21590,7 +21590,7 @@ var EffectsList = React.createClass({
   render: function () {
     let effectNodes = _.values(_.mapObject(this.props.data, (effect, name) => {
 
-      let path = this.props.path.concat(name);
+      let path = this.props.path.concat([name, "value"]);
       let onChange = _.partial(this.props.actions.onChange, path);
 
       let props = _.extend({ key: path.join('.') }, effect);
@@ -21692,12 +21692,12 @@ class Store {
         visA: {
           choice: { value: 0 },
           effects: {},
-          sliders: []
+          sliders: {}
         },
         visB: {
           choice: { value: 0 },
           effects: {},
-          sliders: []
+          sliders: {}
         },
         mix: {
           controls: {},
@@ -21736,9 +21736,7 @@ class Store {
     let path = message.address.split('/').splice(1);
     let item = _.last(path);
     let object = this.getObject(path);
-    if (item == "clear") {
-      object = [];
-    } else if (message.args[0] == 32) {
+    if (message.args[0] == 32) {
       object[item] = {
         type: message.args[1],
         name: message.args[2],
@@ -21747,7 +21745,11 @@ class Store {
         max: message.args[5]
       };
     } else {
-      object[item] = message.args;
+      if (message.args.length == 1) {
+        object[item] = message.args[0];
+      } else {
+        object[item] = message.args;
+      }
     }
   }
 
@@ -21766,11 +21768,7 @@ class Store {
 
     let object = this.getObject(path);
     let name = _.last(path);
-    if (object[name].value != undefined) {
-      object[name].value = value;
-    } else {
-      object[name] = value;
-    }
+    object[name] = value;
 
     this.render();
   }

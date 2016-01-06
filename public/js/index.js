@@ -40,7 +40,6 @@ class Osc  {
   }
 
   triggerListeners(oscMessage) {
-    console.log(oscMessage);
     _.each(this.listeners, function(listener){ listener(oscMessage); });
   }
 
@@ -78,12 +77,12 @@ class Store {
         visA: {
           choice: { value: 0 },
           effects: {},
-          sliders: [],
+          sliders: {},
         },
         visB: {
           choice: { value: 0 },
           effects: {},
-          sliders: [],
+          sliders: {},
         },
         mix: {
           controls: {},
@@ -126,10 +125,7 @@ class Store {
     let path = message.address.split('/').splice(1);
     let item = _.last(path);
     let object = this.getObject(path);
-    if(item == "clear") {
-      object = [];
-    }
-    else if(message.args[0] == 32) {
+    if(message.args[0] == 32) {
       object[item] = {
         type: message.args[1],
         name: message.args[2],
@@ -139,7 +135,12 @@ class Store {
       };
     }
     else {
-      object[item] = message.args;
+      if(message.args.length == 1) {
+        object[item] = message.args[0];
+      }
+      else {
+        object[item] = message.args;
+      }
     }
   }
 
@@ -158,12 +159,7 @@ class Store {
 
     let object = this.getObject(path);
     let name = _.last(path)
-    if(object[name].value != undefined) {
-      object[name].value = value;
-    }
-    else {
-      object[name] = value
-    }
+    object[name] = value
 
     this.render();
   }

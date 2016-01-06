@@ -36,7 +36,7 @@ var Mixer = React.createClass({
 var MixerControls = React.createClass({
   render: function() {
     let controlNodes = _.values(_.mapObject(this.props.data.controls, (control, name) => {
-      let path = this.props.path.concat(name);
+      let path = this.props.path.concat([name, "value"]);
       let onChange = _.partial(this.props.actions.onChange, path);
       let props = _.extend({key:path.join('.')}, control);
 
