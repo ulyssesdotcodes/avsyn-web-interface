@@ -8,7 +8,7 @@ var _ = require('underscore'),
 // Set up an object to do all of the osc stuff
 class Osc  {
   constructor() {
-    this.socket = new WebSocket("ws://127.0.0.1:3000/");
+    this.socket = new WebSocket("ws://" + window.location.hostname + ":3000/");
     this.listeners = [];
 
     this.socket.onopen = (e) => {
