@@ -3,6 +3,7 @@
 var _ = require('underscore'),
     React = require('react'),
     ReactDOM = require('react-dom'),
+    Rpi = require('./Rpi.js'),
     Mixer = require('./Mixer.js');
 
 // Set up an object to do all of the osc stuff
@@ -74,21 +75,27 @@ class Store {
   constructor(osc) {
     this.props = {
       data: {
-        visA: {
-          choice: { value: 0 },
-          effects: {},
-          sliders: {},
+        cueing: false,
+        cinder: {
+          visA: {
+            choice: { value: 0 },
+            effects: {},
+            sliders: {},
+          },
+          visB: {
+            choice: { value: 0 },
+            effects: {},
+            sliders: {},
+          },
+          mix: {
+            controls: {}
+          },
+          choices: [],
         },
-        visB: {
-          choice: { value: 0 },
-          effects: {},
-          sliders: {},
-        },
-        mix: {
-          controls: {},
-          cueing: false
-        },
-        choices: [],
+        rpi: {
+          program: "",
+          lightLevel: 0
+        }
       },
       actions:{
         onChange: _.bind(this.onChange, this),
@@ -153,7 +160,7 @@ class Store {
 
     this.queue.push(message);
 
-    if(!this.props.data.mix.cueing) {
+    if(!this.props.data.cueing) {
       this.playQueue();
     }
 
@@ -165,7 +172,7 @@ class Store {
   }
 
   toggleCueing(value) {
-    this.props.data.mix.cueing = value;
+    this.props.data.cueing = value;
     this.render();
   }
 
@@ -176,8 +183,13 @@ class Store {
 
   render() {
     let props = this.props;
+    // <Mixer {...props} />
+    let rpiProps = _.extend(this.props, { path: ["rpi"] });
+
     ReactDOM.render(
-        <Mixer {...props} />,
+      <div>
+        <Rpi {...rpiProps} />
+      </div>,
       document.getElementById("content")
     );
   }
@@ -189,3 +201,7 @@ var osc = new Osc();
 var store = new Store(osc);
 
 osc.registerListener(_.bind(store.onMessage, store));
+
+document.addEventListener("DOMContentLoaded", function(e) {
+  store.render();
+});
