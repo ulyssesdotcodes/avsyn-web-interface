@@ -13,7 +13,7 @@ var Rpi = React.createClass({
 
     return (
         <div className="rpi">
-          <Controls.Toggle onChange={ toggleAudioReactive } name="Audio Reactive" />
+          <Controls.Toggle onChange={ toggleAudioReactive } name="Audio Reactive" value={ this.props.data.rpi.program == "audioReactive" }/>
           <Controls.Slider onChange={ changeLightLevel } name="Light Level" defaultValue={ 0 } min={ 0 } max={ 1 } />
         </div>
     )
