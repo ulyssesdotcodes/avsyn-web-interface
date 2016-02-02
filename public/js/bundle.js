@@ -21347,18 +21347,18 @@ var Mixer = React.createClass({
   render: function () {
     let createVisProps = vis => {
       return {
-        path: [vis],
+        path: ["cinder", vis],
         actions: this.props.actions,
-        data: _.extend({ choices: this.props.data.choices }, this.props.data[vis])
+        data: _.extend({ choices: this.props.data.cinder.choices }, this.props.data.cinder[vis])
       };
     };
 
     var visAProps = createVisProps("visA");
     var visBProps = createVisProps("visB");
     var controlsProps = {
-      path: ["mix", "controls"],
+      path: ["cinder", "mix", "controls"],
       actions: this.props.actions,
-      data: this.props.data.mix
+      data: this.props.data.cinder.mix
     };
 
     return React.createElement(
@@ -21750,13 +21750,13 @@ class Store {
 
   render() {
     let props = this.props;
-    // <Mixer {...props} />
     let rpiProps = _.extend(this.props, { path: ["rpi"] });
 
     ReactDOM.render(React.createElement(
       'div',
       null,
-      React.createElement(Rpi, rpiProps)
+      React.createElement(Rpi, rpiProps),
+      React.createElement(Mixer, props)
     ), document.getElementById("content"));
   }
 }

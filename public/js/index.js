@@ -183,12 +183,12 @@ class Store {
 
   render() {
     let props = this.props;
-    // <Mixer {...props} />
     let rpiProps = _.extend(this.props, { path: ["rpi"] });
 
     ReactDOM.render(
       <div>
         <Rpi {...rpiProps} />
+        <Mixer {...props} />
       </div>,
       document.getElementById("content")
     );
