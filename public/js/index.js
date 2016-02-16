@@ -4,6 +4,7 @@ var _ = require('underscore'),
     React = require('react'),
     ReactDOM = require('react-dom'),
     Rpi = require('./Rpi.js'),
+    HoY = require('./HoY.js'),
     Mixer = require('./Mixer.js');
 
 // Set up an object to do all of the osc stuff
@@ -95,6 +96,10 @@ class Store {
         rpi: {
           program: "",
           lightLevel: 0
+        },
+        hoy: {
+          program: "",
+          programs: []
         }
       },
       actions:{
@@ -183,12 +188,11 @@ class Store {
 
   render() {
     let props = this.props;
-    let rpiProps = _.extend(this.props, { path: ["rpi"] });
+    let hoyProps = _.extend(this.props, { path: ["hoy"] });
 
     ReactDOM.render(
       <div>
-        <Rpi {...rpiProps} />
-        <Mixer {...props} />
+        <HoY {...hoyProps} />
       </div>,
       document.getElementById("content")
     );
