@@ -99,7 +99,10 @@ class Store {
         },
         hoy: {
           program: "",
-          programs: []
+          programs: [],
+          cues: {
+            nightlife: {}
+          }
         }
       },
       actions:{
@@ -139,8 +142,8 @@ class Store {
     let object = this.getObject(path);
     if(message.args[0] == 32) {
       object[item] = {
-        type: message.args[1],
-        name: message.args[2],
+        name: message.args[1],
+        type: message.args[2],
         value: message.args[3],
         min: message.args[4],
         max: message.args[5]
