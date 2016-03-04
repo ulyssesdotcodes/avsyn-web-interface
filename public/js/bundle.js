@@ -21884,7 +21884,10 @@ class Store {
           program: "",
           programs: [],
           cues: {
-            nightlife: {}
+            nightlife: {},
+            smoke: {},
+            fire: {},
+            bluelight: {}
           }
         }
       },
