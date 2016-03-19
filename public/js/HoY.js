@@ -26,15 +26,15 @@ var HoY = React.createClass({
     }
 
     return (
-        <div className="rpi">
-        <ProgList {...progListProps} />
+        <div className="hoy">
+        <HoYProgList {...progListProps} />
         <Cues {...cueControlsProps} />
         </div>
     )
   }
 })
 
-var ProgList = React.createClass({
+var HoYProgList = React.createClass({
   render: function() {
     var progNodes = this.props.data.programs.map((name, index) => {
       let onSelected = _.partial(this.props.actions.onChange, this.props.path, name);

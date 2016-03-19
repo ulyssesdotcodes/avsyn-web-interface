@@ -21439,15 +21439,15 @@ var HoY = React.createClass({
 
     return React.createElement(
       'div',
-      { className: 'rpi' },
-      React.createElement(ProgList, progListProps),
+      { className: 'hoy' },
+      React.createElement(HoYProgList, progListProps),
       React.createElement(Cues, cueControlsProps)
     );
   }
 });
 
-var ProgList = React.createClass({
-  displayName: 'ProgList',
+var HoYProgList = React.createClass({
+  displayName: 'HoYProgList',
 
   render: function () {
     var progNodes = this.props.data.programs.map((name, index) => {
@@ -21971,11 +21971,13 @@ class Store {
 
   render() {
     let props = this.props;
-    let hoyProps = _.extend(this.props, { path: ["hoy"] });
+    let hoyProps = _.extend({}, this.props, { path: ["hoy"] });
+    let rpiProps = _.extend({}, this.props, { path: ["rpi"] });
 
     ReactDOM.render(React.createElement(
       'div',
       null,
+      React.createElement(Rpi, rpiProps),
       React.createElement(HoY, hoyProps)
     ), document.getElementById("content"));
   }

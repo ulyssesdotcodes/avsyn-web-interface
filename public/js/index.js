@@ -194,10 +194,12 @@ class Store {
 
   render() {
     let props = this.props;
-    let hoyProps = _.extend(this.props, { path: ["hoy"] });
+    let hoyProps = _.extend({}, this.props, { path: ["hoy"] });
+    let rpiProps = _.extend({}, this.props, { path: ["rpi"] });
 
     ReactDOM.render(
       <div>
+        <Rpi {...rpiProps} />
         <HoY {...hoyProps} />
       </div>,
       document.getElementById("content")
